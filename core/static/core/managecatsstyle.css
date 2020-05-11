@@ -1,0 +1,50 @@
+
+.input-group-addon {
+    min-width:32%;
+    text-align:left;
+}
+
+.pad-horizontally{
+	padding-left:120px;
+	padding-right:120px;
+	
+}
+
+.pad-carousal{
+	padding-top:10%;
+	padding-left:30%;
+	padding-right:30%;
+	/*padding-top:5%;*/
+}
+
+.carousel-control-next-icon,
+.carousel-control-prev-icon {
+   filter: invert(1);
+}
+
+
+
+h1 {
+  margin: 0;
+    display: inline-block;
+}
+
+.top-buffer { margin-top: 10px;}
+
+input[type="text"]:disabled{background-color:white;}
+
+.item{
+	height: 100%;
+    width: 100%;
+    object-fit: contain;
+}
+
+.padbot{
+	padding-left:35%;
+
+}
+
+.img-fluid {
+  max-width: 100%;
+  height: auto;
+}

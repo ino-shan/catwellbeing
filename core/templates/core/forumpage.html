@@ -1,0 +1,89 @@
+{% extends "core/base.html" %}
+{% block content %}
+<div class="container">
+	<div class="modal fade" id="ReplyRegisterForm" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+            	<form class="form-horizontal" role="form" method="post"></form>
+            	{% csrf_token %}
+                <div class="modal-header text-center">
+                    <h4 class="modal-title w-100 font-weight-bold">Post a Respose!!</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body mx-3">
+                    <div class="md-form mb-5">
+                        <label>Enter your response below.</label>
+                        <textarea id="description" cols="60"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-center">
+                    <button class="btn btn-outline-primary" onclick="PostResponse()">Post Response</button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+	<h1>{{this_forum.title}}</h1>
+	<div>
+		<h3 style="display:inline-block;">Description: {{this_forum.description}}</h3>
+		<a style="display:inline-block;" href="" class="btn btn btn-outline-primary btn-rounded mb-4 float-right" data-toggle="modal" data-target="#ReplyRegisterForm">Post Reply</a>
+	</div>
+	<br>
+	<h6 id="postdefault"/>
+</div>
+<script type="text/javascript">
+
+    displayPosts();
+
+	function PostResponse(){
+		var description = document.getElementById("description").value;
+
+        if(description==""){
+            window.alert("Enter your response");
+            return;
+        }
+		$.ajax({
+			type: "POST",
+			data: {
+				objective: "CREATE_FORUM_RESPONSE",
+				response_description: description,
+				csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+			},
+			success: function(){
+                location.reload();
+            }
+		});
+	}
+
+    function displayPosts(){
+        var postString ='';
+        
+        "{% for responses in this_forum_responses %}"
+            "{% for users in user_profile %}"   
+                if("{{ users}}" == "{{responses.owner}}"){
+                    if("{{ users.isvet }}" == 'True'){
+             
+                        postString = postString + "<p>" + "{{responses.description}}" + "</p>" 
+                        postString = postString + "<h6 style='font-size: 1em;display: inline'>Replied By: </h6>" + "<h6 style='display: inline;color:#009999;font-size: 1em;'>{{responses.owner}} &#10003; </h6>" + "@ {{responses.created_at}}</h6>"
+                        postString = postString + "<hr>"
+                    }
+                    else{
+                        postString = postString + "<p>" + "{{responses.description}}" + "</p>" 
+                        postString = postString + "<h6 style=' font-size: 1em;'>Replied By: {{responses.owner}} @ {{responses.created_at}}</h6>"
+                        postString = postString + "<hr>"
+                    }
+                }
+            
+            "{% endfor %}"
+        "{% endfor %}"
+              
+        $('#postdefault').html(postString);
+    }
+
+
+
+
+</script>
+{% endblock content %}

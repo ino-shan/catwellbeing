@@ -1,0 +1,46 @@
+{% extends "users/baseuser.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container-fluid">
+  <div class="row no-gutter">
+    <div class="d-none d-md-flex col-md-4 col-lg-6 bg-image"></div>
+    <div class="col-md-8 col-lg-6">
+      <div class="login d-flex align-items-center py-5">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-9 col-lg-8 mx-auto">
+              <h3 class="login-heading mb-4">Cat Wellbeing</h3>
+
+
+              {% if messages %}
+                {% for message in messages %}
+                  <div class="alert alert-success" role="alert">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+
+              <form method="POST">
+                  {% csrf_token %}
+                <div class="form-label-group">
+                    {{ form|crispy}}
+                </div>
+
+
+                <button class="btn btn-lg btn-primary btn-block btn-login text-uppercase font-weight-bold mb-2" type="submit">Sign in</button>
+                <div class="text-center">
+                  <small class="text-muted">Forgot your Password?<a class="ml-2" href="{% url 'password_reset' %}">Reset Password</a><br></small>
+                  <small class="text-muted">Register a new account <a class="ml-2" href="{% url 'register' %}">Sign Up</a><br></small>
+                  <!-- <small class="text-muted">Are you a Clinic wanting to assist cat owners? <a class="ml-2" href="">Apply Here</a>
+                        </small> -->
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock content %}

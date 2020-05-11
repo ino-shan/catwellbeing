@@ -1,0 +1,116 @@
+{% extends "core/base.html" %}
+{% block content %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.js"></script>
+<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+<link href="https://nightly.datatables.net/css/jquery.dataTables.css" rel="stylesheet" type="text/css" />
+<script src="https://nightly.datatables.net/js/jquery.dataTables.js"></script>
+<div class="container">
+    <h1>Detailed Expense Report</h1>
+    <table>
+        <tr>
+            <td>
+                Minimum:
+            </td>
+            <td>
+                <input id="txtMin" class="form-control validate" type="date">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Maximum:
+            </td>
+            <td>
+                <input id="txtMax" class="form-control validate" type="date">
+            </td>
+            <td>
+                <button id="btnGo" type="button" class="btn btn-info">Go</button>
+            </td>
+        </tr>
+    </table>
+    <table class="table" id="example" style="table-layout:fixed;">
+        <thead>
+            <tr>
+                <th scope="col">Category</th>
+                <th scope="col">Cost</th>
+                <th scope="col">Date Spent</th>
+            </tr>
+        </thead>
+        <tbody id="expense-result">
+            {% for expenses in report %}
+            <tr id={{expenses.id}}>
+                <td scope="row">{{expenses.title}}</td>
+                <td>{{expenses.cost}}</td>
+                <td>{{expenses.expense_date}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+     <button type="btn btn-outline-success btn-rounded mb-4 float-right top-buffer" class="btn btn-primary" onclick='PrintThis()'>Print</button>
+</div>
+<script type="text/javascript">
+   
+    $.fn.dataTable.ext.search.push(
+        function(settings, data, dataIndex) {
+
+            var valid = true;
+            var min = moment($("#txtMin").val());
+            if (!min.isValid()) {
+                min = null;
+            }
+
+            var max = moment($("#txtMax").val());
+            if (!max.isValid()) {
+                max = null;
+            }
+
+            if (min === null && max === null) {
+                // no filter applied or no date columns
+                valid = true;
+            } else {
+
+                $.each(settings.aoColumns, function(i, col) {
+
+                    if (col.type == "date") {
+                        var cDate = moment(data[i]);
+
+                        if (cDate.isValid()) {
+                            if (max !== null && max.isBefore(cDate)) {
+                                valid = false;
+                            }
+                            if (min !== null && cDate.isBefore(min)) {
+                                valid = false;
+                            }
+                        } else {
+                            valid = false;
+                        }
+                    }
+                });
+            }
+            return valid;
+        });
+
+    $(document).ready(function() {
+        $("#btnGo").click(function() {
+            $('#example').DataTable().draw();
+        });
+        var table = $('#example').DataTable({
+            columns: [{
+                name: "Category"
+            }, {
+                name: "Cost"
+            }, {
+                name: "Date Spent",
+                type: "date"
+            }, ]
+        });
+    });
+
+
+
+    function PrintThis(){
+        print()
+    }
+</script>
+{% endblock content %}

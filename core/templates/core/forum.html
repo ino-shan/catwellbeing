@@ -1,0 +1,104 @@
+{% extends "core/base.html" %}
+{% block content %}
+<div class="container">
+	<div class="modal fade" id="ForumRegisterForm" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+            	<form class="form-horizontal" role="form" method="post"></form>
+            	{% csrf_token %}
+                <div class="modal-header text-center">
+                    <h4 class="modal-title w-100 font-weight-bold">Create a forum post</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body mx-3">
+                    <div class="md-form mb-5">
+                        <input name="forum_title" type="text" id="forum_title" class="form-control validate" placeholder="Forum Title">
+                    </div>
+                    <div class="md-form mb-5">
+                        <label>Give a description for this post.</label>
+                        <textarea id="description" cols="60"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-center">
+                    <button class="btn btn-outline-primary" onclick="CreateForum()">Create Forum Post</button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+	<h1>Forum</h1>
+	<a href="" class="btn btn-outline-primary btn-rounded mb-4 float-right top-buffer" data-toggle="modal" data-target="#ForumRegisterForm">Create new post</a>
+	<br>
+    <input id="forum_search_input" type="text" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default" placeholder="Wanna search for a forum by title?" onkeyup="FilterTable()">
+	<table class="table" id="forum-table" style="table-layout:fixed;">
+        <thead>
+            <tr>
+                <th scope="col">Title</th>
+                <th scope="col">Created at</th>
+                <th scope="col">Created By</th>
+            </tr>
+        </thead>
+        <tbody id="forum-result">
+            {% for forum in all_forums reversed %}
+            <tr id={{forum.id}}>
+                <td scope="row"><a href="/forumpage/{{forum.id}}/">{{forum.title}}</a></td>
+                <td>{{forum.created_at}}</td>
+                <td>{{forum.owner}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script type="text/javascript">
+	function CreateForum(){
+		var forum_title = document.getElementById("forum_title").value;
+		var description = document.getElementById("description").value;
+
+        if(forum_title==''){
+            alert("Enter post title");
+            return
+        }
+
+        if(description==''){
+            alert("Enter description");
+            return
+        }
+
+
+
+		$.ajax({
+			type: "POST",
+			data: {
+				objective: "CREATE_FORUM",
+				forum_title: forum_title,
+				forum_description: description,
+				csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+			},
+			success: function(){
+                location.reload();
+            }
+		});
+	}
+
+    function FilterTable(){
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("forum_search_input");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("forum-table");
+        tr = table.getElementsByTagName("tr");
+        for(i = 0; i < tr.length; i++){
+            td = tr[i].getElementsByTagName("td")[0];
+            if(td){
+                txtValue = td.textContent || td.innerText;
+                if(txtValue.toUpperCase().indexOf(filter)>-1){
+                    tr[i].style.display = "";
+                }else{
+                    tr[i].style.display = "none";
+                }
+            }  
+        }
+    } 
+</script>
+{% endblock content %}

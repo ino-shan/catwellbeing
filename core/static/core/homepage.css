@@ -1,0 +1,62 @@
+table {
+  table-layout: fixed;
+width: 100%
+}
+td {
+  width: 50%;
+  color: z;
+}
+
+.flex-container {
+  display: flex;
+  
+}
+
+.flex-container > div {
+  background-color: #f1f1f1;
+  margin: 5px;
+  /*padding: 100px;*/
+  font-size: 14px;
+}
+
+.flex-container {
+  display: flex;
+  flex-direction: row;
+}
+
+.scroll{
+	overflow-y: scroll; height:200px;
+}
+
+
+.scrollhide ul {
+  max-height: 100px;
+  max-width: 200px;
+  border: 2px solid #f3f3f3;
+  padding-left: 16px;
+  overflow: auto;
+  /* this will hide the scrollbar in mozilla based browsers */
+  overflow: -moz-scrollbars-none;
+  /* this will hide the scrollbar in internet explorers */
+  -ms-overflow-style: none;
+}
+
+/* this will hide the scrollbar in webkit based browsers - safari, chrome, etc */
+.scrollhide ul::-webkit-scrollbar { 
+  width: 0 !important;
+  display: none; 
+}
+
+.scrollhide::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 0;
+    height: 0;
+}
+
+.unseen{
+  visibility:hidden;
+}
+
+.todayColour{
+   background-color: lightgreen;
+}

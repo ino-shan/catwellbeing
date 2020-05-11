@@ -1,0 +1,10 @@
+django==2.2.*
+django-import-export
+requests
+geopy
+django-crispy-forms
+celery
+redis
+django-celery-beat
+gevent
+pillow

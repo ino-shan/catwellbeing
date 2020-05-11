@@ -1,0 +1,219 @@
+{% extends "core/base.html" %}
+{% block content %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.js"></script>
+<div class="container">
+	<h1>Reminders</h1>
+    <form class="form-horizontal" role="form" method="post"></form>
+        {% csrf_token %}
+        <div class="modal-header text-center">
+            <h4 class="modal-title w-100 font-weight-bold">Set a new reminder</h4>
+          
+        </div>
+        <div class="modal-body mx-3">
+            <div class="md-form mb-5">
+                <select class="browser-default custom-select" id="reminder_for">
+                    <option selected>Reminder Type</option>
+                    <option value="Fleas&Ticks">Fleas & Ticks</option>
+                    <option value="Vaccination">Vaccination</option>
+                    <option value="Nails">Nails</option>
+                    <option value="Hair">Hair</option>
+                    <option value="Litter">Litter</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="md-form mb-5">
+               <input type="text" id="otherBox" class="form-control" placeholder="If reminder type is other, enter custom type">
+            </div>
+            <div class="md-form mb-5">
+                <select class="browser-default custom-select" id="reminder_repeat">
+                    <option selected>Repeat (Off)</option>
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Yearly">Yearly</option>
+                </select>
+            </div>
+            <div class="md-form mb-5">
+                <input id="reminder_date" class="form-control validate" type="date" id="start" name="trip-start">
+            </div>
+            <div class="md-form mb-5">
+                <select class="browser-default custom-select" id="cat_model">
+                    <option selected>Choose your cat</option>
+                    {% for cats in owner_cats %}
+                        <option value="{{cats.cat_name}}">{{cats.cat_name}}</option>
+                    {% endfor %}
+                </select>             
+            </div>
+            <p>Notification type:</p>
+            <div class="md-form mb-5">
+              <input checked type="checkbox" id="homepageCheck" onclick="return false;" name="homepageCheck" value="HomeCheck">
+              <label for="vehicle1">Homepage</label><br>
+              <input type="checkbox" id="emailCheck" name="emailCheck" value="EmailCheck">
+              <label for="vehicle2">Email</label><br>
+            </div>
+        </div>    
+        <div class="modal-footer d-flex justify-content-center">
+            <button class="btn btn-outline-primary" onclick="CreateReminder()">Create Reminder</button>
+        </div>
+    </form>      
+    <br><br><br><br><br>
+    <hr>
+    <div class='text-center'>
+        <h3>Scheduled Reminders</h3>
+    </div>
+    <br><br><br>
+    <div class="" id="recordTableDiv">    
+        <table class="table" id="reminder-table" style="table-layout:fixed;">
+            <thead>
+                <tr>
+                    <th scope="col">Cat Name</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Days Remaining</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tbody id="reminder-result"></tbody>
+        </table>
+    </div>
+</div>
+<script type="text/javascript">
+   
+    $(document).ready( function () {
+        $('#reminder-table').DataTable();
+    });
+    var months = {"January":1, "February":2, "March":3, "April":4, "May":5, "June":6,
+    "July":7, "August":8, "September":9, "October":10, "November":11, "December":12};
+    "{% for reminder in user_reminders %}"
+        var dates = "{{reminder.reminder_date}}".replace(",","").split(" ");
+        var date = dates[1];
+        var month = dates[0];
+        var year = dates[2]
+        var appointment_date = [months[month],date,year].toString().replace(",","/").replace(",","/");
+        
+        var today = new Date();
+        
+        var dd = String(today.getDate()).padStart(2, '0');
+        var mm = String(today.getMonth() + 1).padStart(2, '0'); 
+        var yyyy = today.getFullYear();
+        today = mm + '/' + dd + '/' + yyyy;
+        
+
+        appointment_date = new Date(appointment_date);
+    
+      
+        today = new Date(today);
+       
+       
+        var diffTime = Math.abs(today - appointment_date);
+        var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+       
+        if(appointment_date>=today){
+            $("#reminder-table").find('tbody').append("<tr id={{reminder.id}}><td scope='row'>{{reminder.reminder_cat.cat_name}}</td><td>{{reminder.reminder_type}}</td><td>{{reminder.reminder_date}}</td><td>"+diffDays+"</td><td><button type='button' class='btn btn-outline-danger' onclick='DeleteReminder({{reminder.id}})'>Delete Reminder</button></td></tr>");
+        } else {
+             $("#reminder-table").find('tbody').append("<tr id={{reminder.id}}><td scope='row'>{{reminder.reminder_cat.cat_name}}</td><td>{{reminder.reminder_type}}</td><td>{{reminder.reminder_date}}</td><td>"+"Reminder date passed!" +"</td><td><button type='button' class='btn btn-outline-danger' onclick='DeleteReminder({{reminder.id}})'>Delete Reminder</button></td></tr>");
+               
+        }
+        
+    "{% endfor %}"
+
+	function CreateReminder() {
+		var reminder_for = document.getElementById('reminder_for').value;
+		var reminder_date = document.getElementById("reminder_date").value;
+		var reminder_who = document.getElementById("cat_model").value;
+        var reminder_email = document.getElementById("emailCheck").checked;
+        var reminder_repeat = document.getElementById("reminder_repeat").value;
+
+        var today = new Date();
+        var dd = String(today.getDate()).padStart(2, '0');
+        var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+        var yyyy = today.getFullYear();
+        today = mm + '/' + dd + '/' + yyyy;
+        today = new Date(today);
+        newReminderDate = new Date(reminder_date);
+
+
+        if(newReminderDate<today){
+            alert("Can't set a reminder for a date in the past!");
+            return;
+        }
+
+
+        if (reminder_for == 'Reminder Type'){
+            alert("Choose reminder type!");
+            return;
+        }
+        if (reminder_date == ''){
+            alert("Select a date!");
+            return;
+        }
+        if (reminder_who == 'Choose your cat'){
+            alert("Select a cat!");
+            return;
+        }
+        if (reminder_for == 'Other'){
+            var reminder_for = document.getElementById('otherBox').value;
+            if (reminder_for == ''){
+                alert("Choose reminder type or enter custom type");
+                return;
+            }
+        }
+
+       
+		$.ajax({
+			type: "POST",
+			data: {
+				reminder_for: reminder_for,
+				reminder_date: reminder_date,
+				reminder_who: reminder_who,
+                reminder_email: reminder_email,
+                reminder_repeat: reminder_repeat,
+				csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+			},success: function(){
+            	location.reload();
+            }
+
+		});
+	}
+
+    function DeleteReminder(reminder_id){
+        $.ajax({
+            type: "PUT",
+            data: {
+                objective: "DELETE_REMINDER",
+                reminder_id: reminder_id,
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(){
+                location.reload();
+            }
+        })
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+     
+</script>
+{% endblock content %}
+
+
+
+
+
+
+
+
+
+
+

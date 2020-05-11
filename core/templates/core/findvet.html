@@ -1,0 +1,873 @@
+{% extends "core/base.html" %}
+{% load staticfiles %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<div class="container">
+	<h1>Find a Vet</h1>
+	<div class="loc-buttons">
+	
+	
+</div>
+	<form onkeypress="return event.keyCode != 13;" >
+	  <div class="input-group mb-3">
+	  <input name="inputBoxLoc" id="userLocText" type="text" class="form-control hide" placeholder="Enter Location (separate address lines using commas or spaces)" >
+	  <div class="input-group-append">
+	    <button id="userLocBtn" class="btn btn-outline-primary hide" type="button" onclick ="inputLocation();">Submit</button>
+	  </div>
+	  </div>
+
+	</form>
+	
+    <div class="btn-toolbar">
+	 	<button class="btn btn-outline-info mr-1  " onclick="getLocation();">Get my Location</button>
+	 	<button style="display: inline-block;" class="btn btn-outline-success " onclick="getVetLocations();return false;">Search for nearby Vets</button>
+	  <div class="collapse" id="recDiv">
+	  	<button id='recBtn'  class="btn btn-outline-primary btn-small ml-1" type="button" onclick="getVetRecommendation();">Let us recommend a vet! </button>	
+	  </div>
+	  <div class="collapse" id="routeDiv">
+	  	<button id='routeBtn'  class="btn btn-outline-primary btn-small ml-1" type="button" onclick="getRoute();">Get directions </button>	
+	  </div>
+	</div>
+
+	<br>
+	<div id="map"></div>
+ 	<br>
+    <div class="collapse" id="vetInformation">      
+		<h3 id = "vetNameDefault" ></h3>
+		<h3 id = "vetRatingDefault" ></h3>		
+		<div id="stars" >
+		</div>
+		<br>
+	</div>
+	<div class="collapse" id="reviewForm">
+		<h4>Have you been to this veterinary surgery?</h4>
+		<h5>Leave a review : </h5>
+		 	<form id="actualReviewForm">
+		 		<div class="form-group">  		
+		    		<textarea class="form-control" id="reviewTextBox" rows="4"></textarea>
+		    		<br>
+		    		<h5>Give Rating : </h5>
+		  		</div>
+		  		<div class="form-group">  
+				    <select class="form-control" id="reviewRatingSelect">
+					      <option>1</option>
+					      <option>2</option>
+					      <option>3</option>
+					      <option>4</option>
+					      <option>5</option>
+				    </select>
+		  		</div>
+		  		<button id='userReviewBtn'  class="btn btn-outline-primary float-right" type="button" onclick="submitReview();">Submit</button>
+		  		
+		  	</form>
+		<br><br>
+	</div>
+	<div class="collapse" id="reviewList">
+		<h4>Read user reviews:</h4>
+		<button id='sortReviewBtn'  class="btn btn-outline-primary btn-small " type="button" onclick="sortReviews();">Sort (old/new) &#8595; &#8593; </button>		
+		<h5 id="reviewPrint" ></h5>
+  	</div>
+</div>
+<script type="text/javascript">
+
+
+	var map = L.map('map',{minZoom:10}).setView([51.5,-.1],10);
+
+	L.tileLayer('https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=o82EHiCisjqcX6T9idAG', {
+		attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',	
+	}).addTo(map);
+
+	var myIcon = L.icon({
+    iconUrl: "{% static 'core/cat-icon.png' %}",
+    iconSize: [28, 35],
+    iconAnchor: [28, 35],
+    popupAnchor: [-6, -26],
+ 
+});
+
+	var marker;
+	var circle;
+	var layerGroup = L.layerGroup().addTo(map);
+	var createdVets = [];
+	var submittedReviewsName = [];
+	var submittedReviewsRating = [];
+	var submittedReviewsBody = [];
+	var reviewUser = [];
+	var reviewRating = [];
+	var reviewBody = [];
+	var routingControl;
+	var vetSelected = false;
+	var currentVetLatLong;
+
+
+	function getLocation(){
+		$("#routeDiv").addClass("collapse");
+		
+		if (navigator.geolocation){
+			
+			navigator.geolocation.getCurrentPosition(showPosition);
+						
+		}
+		
+	}
+	function showPosition(position){
+		if (marker!=null){
+			marker.remove();
+		}
+		marker = L.circleMarker([position.coords.latitude,position.coords.longitude]).addTo(map);
+
+		marker.bindPopup("<b>Your current location</b>").openPopup();
+		map.flyTo([position.coords.latitude,position.coords.longitude],16);
+
+	
+	}
+
+
+	function inputLocation(){		
+		if (isEmpty(document.getElementById("userLocText").value)){
+			alert("No location entered");
+		}
+		else
+		{
+			var inputtedText = document.getElementById("userLocText").value;
+
+			$.ajax({
+				type: "POST",
+				
+				data:   {csrfmiddlewaretoken: '{{ csrf_token }}',
+						objective : "GET_LAT_LONG",
+					    inputtedText : inputtedText},
+				success : function(response){
+					var convertedLoc = response;
+					if (convertedLoc == "Can't find Location")
+					{			
+						alert("Can't find Location");
+					}
+					else{
+
+
+						
+						var convertedLoc2 = convertedLoc.split(",");
+						var convLat = convertedLoc2[0];
+						
+						var convLon = convertedLoc2[1];
+						
+
+						if (marker!=null){
+							marker.remove();
+						}
+
+						marker = L.circleMarker([convLat,convLon]).addTo(map);
+
+						marker.bindPopup("<b>Your general location</b>").openPopup();
+						map.flyTo([convLat,convLon],14);
+					}
+				}
+			})
+		}
+
+	}
+
+	function isEmpty(value){
+    return (value == null || value.length === 0);
+	}
+
+	function getVetLocations(){
+		$("#vetInformation").removeClass("collapse");
+		$("#vetNameDefault").html("<h5>Click on cat icon to get vet information <br> Use your mouse to drag around the map</h5>");
+		layerGroup.clearLayers();
+		$("#routeDiv").addClass("collapse");
+		
+		if (marker==null){
+			alert("No location method selected");
+		}
+		else{
+
+
+			var userLoc = marker.getLatLng();
+			var userLat = userLoc.lat;
+			
+			var userLon = userLoc.lng;
+			
+			var vetUrl = "https://nominatim.openstreetmap.org/search?q=Veterinary+Surgeries+near+[" + userLat + ","+ userLon + "]&format=json&limit=100";
+
+			$.ajax({
+				type: "POST",
+				url: vetUrl,			
+				success: function(response){
+					var all_result = response;
+					
+					for (var ii = 0; ii<all_result.length; ii++){
+						var vet_data = all_result[ii];
+						var vet_latitude = all_result[ii].lat;
+						var vet_longitude = all_result[ii].lon;
+						
+						var vet_name_full = all_result[ii].display_name.split(",");
+						var vet_name = vet_name_full[0] + "," + vet_name_full[1];
+					
+						var marker = L.marker([vet_latitude,vet_longitude], {icon: myIcon}).on('click', vetSelect);
+						marker.addTo(layerGroup);
+						marker.bindPopup(vet_name);
+						$("#recDiv").removeClass("collapse");
+						 
+					}	
+				}
+			})
+			map.setZoom(13);
+		}
+		
+	}
+
+	function getVetRecommendation(){
+
+
+		var vetrecname =[];
+		var vetrecloc =[];
+		var vetrecrev =[];
+		
+		var vetrecrat=[];
+		var vetrecdis =[];
+
+	
+
+		layerGroup.clearLayers();
+		$("#routeDiv").addClass("collapse");
+		
+		if (marker==null){
+			alert("No location method selected");
+		}
+		else{
+
+
+			var userLoc = marker.getLatLng();
+			var userLat = userLoc.lat;
+		
+			var userLon = userLoc.lng;
+			
+			var vetUrl = "https://nominatim.openstreetmap.org/search?q=Veterinary+Surgeries+near+[" + userLat + ","+ userLon + "]&format=json&limit=5";
+
+			$.ajax({
+				type: "POST",
+				url: vetUrl,			
+				success: function(response){
+					var all_result = response;
+					
+				
+					for (var ii = 0; ii<all_result.length; ii++){
+						var vet_data = all_result[ii];
+						var vet_latitude = all_result[ii].lat;
+						var vet_longitude = all_result[ii].lon;
+						
+						var vet_name_full = all_result[ii].display_name.split(",");
+						var vet_name = vet_name_full[0] + "," + vet_name_full[1];
+					
+						var marker = L.marker([vet_latitude,vet_longitude], {icon: myIcon}).on('click', vetSelect);
+						marker.addTo(layerGroup);
+						marker.bindPopup(vet_name);
+
+						
+						vetrecname[ii] = vet_name;
+						vetrecloc[ii] = marker;
+							
+						vetrecdis[ii] = 20-(ii*3)
+						
+											
+						var reviewCount = 0;
+						var vetrecTotalRating = 0;
+						
+						"{% for review in all_reviews %}"
+							if ("{{review.vet_clinic.name}}"== vetrecname[ii]){vetrecTotalRating = vetrecTotalRating + parseInt("{{review.review_rating}}");
+								
+								reviewCount+=1;			
+							}	
+						"{% endfor %}"	
+						vetrecrat[ii] = parseFloat(vetrecTotalRating/reviewCount).toFixed(2);
+						vetrecrev[ii] = reviewCount;
+
+					}
+
+					vetratsorted =[];
+					vetratnamesorted = [];
+
+
+					for (var i = 0; i < vetrecrat.length; i++) {
+					    vetratsorted[i] = vetrecrat[i];
+					    vetratnamesorted[i] = vetrecname[i];
+					}	
+	
+				
+					var list = [];
+					for (var j = 0; j < vetratsorted.length; j++) 
+					    list.push({'vetratsort': vetratsorted[j], 'vetratnamesort': vetratnamesorted[j]});
+
+				
+					list.sort(function(a, b) {
+					    return ((a.vetratsort < b.vetratsort) ? -1 : ((a.vetratsort == b.vetratsort) ? 0 : 1));
+					    
+					});
+
+					
+					for (var k = 0; k < list.length; k++) {
+					    vetratsorted[k] = list[k].vetratsort;
+					    vetratnamesorted[k] = list[k].vetratnamesort;
+					}	
+
+
+
+					for (var i = 0; i < vetratsorted.length; i++){
+
+							vetratsorted[i] = 6+(i*3);
+						
+					}
+
+
+
+					vetrevsorted =[];
+					vetrevnamesorted = [];
+
+
+					for (var i = 0; i < vetrecrev.length; i++) {
+					    vetrevsorted[i] = vetrecrev[i];
+					    vetrevnamesorted[i] = vetrecname[i];
+					}	
+					
+
+					 
+				
+					var list = [];
+					for (var j = 0; j < vetrevsorted.length; j++) 
+					    list.push({'vetrevsort': vetrevsorted[j], 'vetrevnamesort': vetrevnamesorted[j]});
+
+				
+					list.sort(function(a, b) {
+					    return ((a.vetrevsort < b.vetrevsort) ? -1 : ((a.vetrevsort == b.vetrevsort) ? 0 : 1));
+					    
+					});
+
+					
+					for (var k = 0; k < list.length; k++) {
+					    vetrevsorted[k] = list[k].vetrevsort;
+					    vetrevnamesorted[k] = list[k].vetrevnamesort;
+					}		
+
+
+
+					for (var i = 0; i < vetrevsorted.length; i++){
+						vetrevsorted[i] = 2+(i*3);
+						
+					}
+
+
+	
+
+					var finalvetname = [];
+					var finalvetpoints = [0,0,0,0,0];
+
+					for (var i = 0; i < vetrecname.length; i++){
+						finalvetname.push(vetrecname[i])
+					}
+
+
+					finalvetname.forEach(function(name, i) {
+					  
+					    j = vetrecname.indexOf(name);
+					    finalvetpoints[i]= finalvetpoints[i] + vetrecdis[j];
+
+					})
+
+					finalvetname.forEach(function(name, i) {
+					    
+					    j = vetratnamesorted.indexOf(name);
+					    finalvetpoints[i]= finalvetpoints[i] + vetratsorted[j];
+
+					})
+
+					
+
+
+
+					finalvetname.forEach(function(name, i) {	
+
+					    j = vetrevnamesorted.indexOf(name);
+					    finalvetpoints[i]= finalvetpoints[i] + vetrevsorted[j];
+
+					})
+						
+
+					
+					var maxind = indexOfMax(finalvetpoints);
+					
+				
+				
+					vetrecloc[maxind].openPopup();
+					map.flyTo(vetrecloc[maxind].getLatLng(),15);
+					$("#vetInformation").removeClass("collapse");
+					$("#vetNameDefault").html("<h4>We recommend " +finalvetname[maxind]+" ,Click on vet for more information!</h4>");
+					$("#reviewList").addClass("collapse");
+					$('#vetRatingDefault').html("");
+
+
+						 
+				}		
+						
+				
+			})
+			map.setZoom(13);
+		}
+		
+	}
+
+
+	function indexOfMax(arr) {
+	    if (arr.length === 0) {
+	        return -1;
+	    }
+
+	    var max = arr[0];
+	    var maxIndex = 0;
+
+	    for (var i = 1; i < arr.length; i++) {
+	        if (arr[i] > max) {
+	            maxIndex = i;
+	            max = arr[i];
+	        }
+	    }
+
+	    return maxIndex;
+	}
+
+	function getRoute(){
+		
+        if(vetSelected){
+			map.removeControl(routingControl);
+		}
+
+
+		routingControl = L.Routing.control({
+		  waypoints: [
+		    L.latLng(marker.getLatLng()),
+		    L.latLng(currentVetLatLong)
+		  ],
+		  router: L.Routing.mapbox('pk.eyJ1IjoiZXZvbHZlZCIsImEiOiJjazl1aXg5MGcwMDlyM2dwbXBqb21pYTh5In0.Fxd94j_S5yND0LYYz6tBkw'),
+		  draggableWaypoints:false,
+		  createMarker: function() { return null; }
+		}).addTo(map);
+
+
+		vetSelected = true;
+	}
+
+	function vetSelect(e){
+		$("#vetInformation").removeClass("collapse");
+		$("#reviewList").removeClass("collapse");
+		$("#routeDiv").removeClass("collapse");
+		$("#recDiv").addClass("collapse");
+
+		var userReviewList = [];
+
+		
+		"{% for review in user_reviews %}"				
+			userReviewList.push("{{review.vet_clinic.name}}");
+		"{% endfor %}"
+
+
+
+		var markerName = this.getPopup().getContent();
+		currentVetLatLong = this.getLatLng();
+		$("#vetNameDefault").html(markerName);
+
+		displayReviews(markerName);
+
+		var reviewed = false;
+		if(userReviewList.length!=0){		
+			for (var ii = 0; ii<userReviewList.length; ii++){
+				if(markerName == userReviewList[ii]){
+					reviewed = true;
+					break;
+				}
+			}
+		}
+
+		if(submittedReviewsName.length!=0){			
+			for (var ii = 0; ii<submittedReviewsName.length; ii++){
+				if(markerName == submittedReviewsName[ii]){
+					reviewed = true;
+					break;
+				}
+			}
+		}
+
+		if(!reviewed){
+			$("#reviewForm").removeClass("collapse");
+			document.getElementById("actualReviewForm").reset();
+		}
+		else{
+			$("#reviewForm").addClass("collapse");
+		}
+
+
+		var veterinary_names = [];
+						
+		"{% for vets in all_vets %}"				
+			veterinary_names.push("{{vets.name}}");
+		"{% endfor %}"
+				
+				
+		if (veterinary_names.length == 0){
+			
+			createNewVet(markerName);
+			return;
+
+		}
+		
+	
+		for (var ii = 0; ii<veterinary_names.length; ii++){
+			if (markerName == veterinary_names[ii]){
+				
+				return;
+			}				
+		}
+
+		createNewVet(markerName);
+		
+		
+	}
+
+	function sortReviews(){
+		
+			var reviewString = "";
+
+			reviewUser.reverse();
+			reviewRating.reverse();
+			reviewBody.reverse();
+
+			var markerName =  $('#vetNameDefault').text();
+
+			if(submittedReviewsName.length!=0){			
+						for (var ii = 0; ii<submittedReviewsName.length; ii++){
+							if(markerName == submittedReviewsName[ii]){															
+								var currentUser = "{{ user.get_username }}";
+								var reviewToSubmit = submittedReviewsBody[ii];			
+							    var ratingToSubmit = submittedReviewsRating[ii];
+							
+								reviewString = reviewString + "<hr>" + "<h6>" + "<p>" +"<b>" + "<i>" + currentUser.toString() + "</i>" + "</b>" + "</p>" + "<p>" + "Rating: " +
+								"<span class='userStar'>"+displayUserRating(ratingToSubmit)+"</span>" + "</p>" + "<h6>" + "<p>" + reviewToSubmit.toString() + "</p>";
+								break;
+							}	
+						}
+			}
+	
+
+			if(reviewUser.length!=0){
+				for (var ii = 0; ii<reviewUser.length; ii++){
+						if(reviewUser[ii]!="{{ user.get_username }}"){	
+											
+							var currentUser = reviewUser[ii];
+							var reviewToSubmit = reviewBody[ii];			
+						    var ratingToSubmit = reviewRating[ii];
+						
+							reviewString = reviewString + "<hr>" + "<h6>" + "<p>" + "<i>" + currentUser.toString() + "</i>" + "</p>" + "<p>" + "Rating: " +
+							"<span class='userStar'>"+displayUserRating(ratingToSubmit)+"</span>" + "</p>" + "<h6>" + "<p>" + reviewToSubmit.toString() + "</p>";	
+						}
+							
+				}
+				for (var ii = 0; ii<reviewUser.length; ii++){
+						if(reviewUser[ii]=="{{ user.get_username }}"){							
+							var currentUser = reviewUser[ii];
+							var reviewToSubmit = reviewBody[ii];			
+						    var ratingToSubmit = reviewRating[ii];
+						
+							reviewString = "<hr>" + "<h6>" + "<p>" +"<b>"+ "<i>" + currentUser.toString() + "</i>" +"</b>" + "</p>" + "<p>" + "Rating: " +
+							"<span class='userStar'>"+displayUserRating(ratingToSubmit)+"</span>" + "</p>" + "<h6>" + "<p>" + reviewToSubmit.toString() + "</p>" + reviewString;	
+						}
+							
+				}
+				$('#reviewPrint').html(reviewString);
+			}
+			
+		
+	}
+
+	function displayReviews(markerName){
+		
+			reviewUser = [];
+			reviewRating = [];
+			reviewBody = [];
+			var totalPoints = 0;
+			var reviewCount = 0;
+			
+			"{% for review in all_reviews %}"
+				if ("{{review.vet_clinic.name}}"== markerName){	
+					if("{{review.owner}}"=="{{ user.get_username }}"){
+						reviewUser.push("{{review.owner}}");	
+						reviewRating.push("{{review.review_rating}}");
+						reviewBody.push("{{review.review_text}}");
+							
+				}	}
+			"{% endfor %}"
+
+			"{% for review in all_reviews %}"
+				if ("{{review.vet_clinic.name}}"== markerName){	
+					if("{{review.owner}}"!="{{ user.get_username }}"){
+						reviewUser.push("{{review.owner}}");	
+						reviewRating.push("{{review.review_rating}}");
+						reviewBody.push("{{review.review_text}}");
+					}		
+				}	
+			"{% endfor %}"
+
+			var currentUser;
+			var reviewToSubmit;			
+			var ratingToSubmit;
+
+			var reviewString = "";
+			var reviewed = false;
+
+			if(reviewUser.length!=0){
+				if(submittedReviewsName.length!=0){			
+						for (var ii = 0; ii<submittedReviewsName.length; ii++){
+							if(markerName == submittedReviewsName[ii]){
+								reviewed = true;
+								reviewCount = reviewCount + 1;
+								currentUser = "{{ user.get_username }}";
+								reviewToSubmit = submittedReviewsBody[ii];			
+							    ratingToSubmit = submittedReviewsRating[ii];						
+								reviewString = reviewString + "<hr>" + "<h6>" + "<p>" +"<b>"+ "<i>" + currentUser.toString() +"</i>" +"</b>"+ "</p>" + "<p>" + "Rating: " +
+								"<span class='userStar'>"+displayUserRating(ratingToSubmit)+"</span>" + "</p>" + "<h6>" + "<p>" + reviewToSubmit.toString() + "</p>";
+								break;
+							}	
+						}
+						
+
+
+
+						for (var ii = 0; ii<reviewUser.length; ii++){		
+							if(reviewUser[ii]=="{{ user.get_username }}"){
+								reviewString = reviewString + "<hr>" + "<h6>" + "<p>" + "<b>"+"<i>" + reviewUser[ii].toString() + "</i>" + "</b>" + "</p>" + "<p>" + "Rating: " +
+								"<span class='userStar'>"+displayUserRating(reviewRating[ii])+"</span>" + "</p>" + "<h6>" + "<p>" + reviewBody[ii].toString() + "</p>";		
+							}
+							else{
+								reviewString = reviewString + "<hr>" + "<h6>" + "<p>" + "<i>" + reviewUser[ii].toString() + "</i>" + "</p>" + "<p>" + "Rating: " +
+								"<span class='userStar'>"+displayUserRating(reviewRating[ii])+"</span>" + "</p>" + "<h6>" + "<p>" + reviewBody[ii].toString() + "</p>";		
+							}
+						
+
+							totalPoints = parseInt(totalPoints) + parseInt(reviewRating[ii]);
+							
+							reviewCount = reviewCount + 1;
+						}
+
+						
+				
+						$('#reviewPrint').html(reviewString);
+					
+						if(reviewed){
+							var updatedPoints = parseInt(totalPoints) + parseInt(ratingToSubmit);
+							var averageRating = parseInt(updatedPoints/reviewCount);
+							
+						}
+						else{
+							var averageRating = parseInt(totalPoints/reviewCount);
+						}
+					
+
+						
+
+						var stars = displayUserRating(averageRating);
+						$('#vetRatingDefault').html("User Rating: " + "<span class='averageStar'>"+stars+"</span>");
+				}
+				else{
+					for (var ii = 0; ii<reviewUser.length; ii++){		
+						if(reviewUser[ii]=="{{ user.get_username }}"){
+								reviewString = reviewString + "<hr>" + "<h6>" + "<p>" + "<b>"+"<i>" + reviewUser[ii].toString() + "</i>" + "</b>" + "</p>" + "<p>" + "Rating: " +
+								"<span class='userStar'>"+displayUserRating(reviewRating[ii])+"</span>" + "</p>" + "<h6>" + "<p>" + reviewBody[ii].toString() + "</p>";		
+						}
+						else{
+							reviewString = reviewString + "<hr>" + "<h6>" + "<p>" + "<i>" + reviewUser[ii].toString() + "</i>" + "</p>" + "<p>" + "Rating: " +
+							"<span class='userStar'>"+displayUserRating(reviewRating[ii])+"</span>" + "</p>" + "<h6>" + "<p>" + reviewBody[ii].toString() + "</p>";		
+						}
+					
+
+						totalPoints = parseInt(totalPoints) + parseInt(reviewRating[ii]);
+						
+						reviewCount = reviewCount + 1;
+					}
+
+				
+					$('#reviewPrint').html(reviewString);
+					
+					var averageRating = parseInt(totalPoints/reviewCount);
+
+					var stars = displayUserRating(averageRating);
+					$('#vetRatingDefault').html("User Rating: " + "<span class='averageStar'>"+stars+"</span>");
+				}
+					
+		
+			}
+			else{
+				var reviewed = false;
+				if(submittedReviewsName.length!=0){			
+					for (var ii = 0; ii<submittedReviewsName.length; ii++){
+						if(markerName == submittedReviewsName[ii]){
+							reviewed = true;
+
+							var currentUser = "{{ user.get_username }}";
+							var reviewToSubmit = submittedReviewsBody[ii];			
+						    var ratingToSubmit = submittedReviewsRating[ii];					
+							reviewString = reviewString + "<hr>" + "<h6>" + "<p>" + "<b>" + "<i>" + currentUser.toString() + "</i>" + "</b>" + "</p>" + "<p>" + "Rating: " +
+							"<span class='userStar'>"+displayUserRating(ratingToSubmit)+"</span>" + "</p>" + "<h6>" + "<p>" + reviewToSubmit.toString() + "</p>";	
+							$('#reviewPrint').html(reviewString);
+							break;
+						}
+					}
+				}
+				if(!reviewed){
+					$('#reviewPrint').html('There are no reviews for this veterinary surgery.');
+					$('#vetRatingDefault').html("");
+
+				}
+			
+				
+			}
+		
+	}
+
+
+	function displayUserRating(average){
+
+		 	var averageRating = average;
+
+			var coloured_star =  Math.floor(averageRating);  
+			
+			var count = 0;
+
+			var stars= "";
+			for (var i = 0; i< coloured_star; i++) {
+			    stars = stars + "<i class='material-icons'>star</i>";
+			    count=count+1;
+			}
+			
+
+			difference = averageRating - coloured_star;
+			difference = parseInt(Math.round(difference*10));
+			
+			if(count<5){
+				half = false;
+				full = false;
+				outline = false;
+				if (difference>=8) {
+					
+						stars = stars + "<i class='material-icons'>star</i>";
+				}
+				else if (difference < 3) {
+					
+				   	stars = stars + "<i class='material-icons'>star_outline</i>";
+				} 
+				else {
+					
+				    stars = stars + "<i class='material-icons'>star_half</i>";
+				}
+				count = count + 1
+
+				
+				while (count!=5){					
+					stars = stars + "<i class='material-icons'>star_outline</i>";
+					count+=1;
+				}
+			}
+	
+			return stars;
+	}
+
+
+
+	function submitReview(){
+		
+		if (isEmpty(document.getElementById("reviewTextBox").value)){
+			alert("Review cannot be empty");			
+		}
+		else{
+
+			var reviewToSubmit = $('#reviewTextBox').val();
+			
+			var ratingToSubmit = $('#reviewRatingSelect').val();
+			
+			var relatedVet = $('#vetNameDefault').text();
+			
+			submittedReviewsName.push(relatedVet);
+			submittedReviewsRating.push(ratingToSubmit);			
+			submittedReviewsBody.push(reviewToSubmit);
+			
+			
+			$.ajax({
+					type: "POST",
+					data: {
+						objective: "CREATE_REVIEW",
+						rating: ratingToSubmit,
+						review: reviewToSubmit,
+						vet: relatedVet,
+						csrfmiddlewaretoken: '{{ csrf_token }}'
+					},
+					success: function(){
+						
+						$("#reviewForm").addClass("collapse");
+						
+						displayReviews(relatedVet);
+					}
+			})
+		}
+
+	}
+
+
+	function createNewVet(markerName){
+		var vetName = markerName;
+		if (createdVets.length!=0){
+
+			for (var ii = 0; ii<createdVets.length; ii++){
+				if(vetName == createdVets[ii]){
+					
+					return;
+				}
+			}
+
+			createdVets.push(vetName);
+			$.ajax({
+				type: "POST",
+				data: {
+					objective: "CREATE_VET",
+					name: vetName,
+					csrfmiddlewaretoken: '{{ csrf_token }}'
+				},
+				success: function(){
+					
+				}
+			})
+
+
+					
+		}
+		else{
+			createdVets.push(vetName);
+			$.ajax({
+				type: "POST",
+				data: {
+					objective: "CREATE_VET",
+					name: vetName,
+					csrfmiddlewaretoken: '{{ csrf_token }}'
+				},
+				success: function(){
+					
+
+				}
+			})
+		}
+
+	}
+	
+	
+</script>
+{% endblock content %}

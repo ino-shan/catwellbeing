@@ -1,0 +1,503 @@
+{% extends "core/base.html" %}
+{% load staticfiles %}
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{% static 'core/homepage.css' %}">
+<div class="container">
+    <h1>Welcome to Cat Wellbeing</h1>
+    <br><br>
+    <h3 class="text-center" >Your schedule for this week</h3>  
+    <div class="flex-container">
+      <div>
+      	<div>
+	      	<table class="table" id="">
+			  <thead>
+			    <tr>
+			      <th class="text-center" id="moncol" scope="col">Monday</th>
+			    </tr>
+			  </thead>
+			</table>
+	      </div>
+		  <div class="scrollhide scroll ">
+		  	<table class="table" id="mondayTable">
+			  <tbody id="mondayResult"></tbody>			   		
+			</table>
+		</div>
+	  </div>
+	  <div>
+      	<div>
+	      	<table class="table" id="">
+			  <thead>
+			    <tr>
+			      <th class="text-center" id="tuecol" scope="col">Tuesday</th>
+			    </tr>
+			  </thead>
+			</table>
+	      </div>
+		  <div class="scrollhide scroll ">
+		  	 <table class="table" id="tuesdayTable">
+			  <tbody id="tuesdayResult"></tbody>				 
+			</table>
+		</div>
+	  </div>
+	  <div>
+      	<div>
+	      	<table class="table" id="">
+			  <thead>
+			    <tr>
+			      <th class="text-center" id="wedcol"scope="col">Wednesday</th>
+			    </tr>
+			  </thead>
+			</table>
+	      </div>
+		  <div class="scrollhide scroll ">
+		  	 <table class="table" id="wednesdayTable">
+			  <tbody id="wednesdayResult"></tbody>				 
+			</table>
+			</table>
+		</div>
+	  </div>
+	  <div>
+      	<div>
+	      	<table class="table" id="">
+			  <thead>
+			    <tr>
+			      <th class="text-center" id="thucol" scope="col">Thursday</th>
+			    </tr>
+			  </thead>
+			</table>
+	      </div>
+		  <div class="scrollhide scroll ">
+		  	 <table class="table" id="thursdayTable">
+			  <tbody id="thursdayResult"></tbody>				 
+			</table>
+			</table>
+		</div>
+	  </div>
+	</div>
+	<div class="flex-container">
+	  <div>
+      	<div>
+	      	<table class="table" id="">
+			  <thead>
+			    <tr>
+			      <th class="text-center" id="fricol" scope="col">Friday</th>
+			    </tr>
+			  </thead>
+			</table>
+	      </div>
+		  <div class="scrollhide scroll ">
+		  	 <table class="table" id="fridayTable">
+			  <tbody id="fridayResult"></tbody>				 
+			</table>
+			</table>
+		</div>
+	  </div>
+	  <div>
+      	<div>
+	      	<table class="table" id="">
+			  <thead>
+			    <tr>
+			      <th class="text-center" id="satcol" scope="col">Saturday</th>
+			    </tr>
+			  </thead>
+			</table>
+	      </div>
+		  <div class="scrollhide scroll ">
+		  	 <table class="table" id="saturdayTable">
+			  <tbody id="saturdayResult"></tbody>				 
+			</table>
+			</table>
+		</div>
+	  </div>
+	  <div>
+      	<div>
+	      	<table class="table" id="">
+			  <thead>
+			    <tr>
+			      <th class="text-center" id="suncol" scope="col">Sunday</th>
+			    </tr>
+			  </thead>
+			</table>
+	      </div>
+		  <div class="scrollhide scroll ">
+		  	 <table class="table" id="sundayTable">
+			  <tbody id="sundayResult"></tbody>				 
+			</table>
+			</table>
+		</div>
+	  </div>
+	  <div class="unseen">
+      	<div class="unseen">
+	      	<table class="table" id="">
+			  <thead>
+			    <tr>
+			      <th class="text-center" scope="col"></th>
+			    </tr>
+			  </thead>
+			</table>
+	      </div>
+		  <div class="scrollhide scroll unseen">
+		  	 <table class="table" id="">
+			  <tbody id=""></tbody>				 
+			</table>
+			</table>
+		</div>
+	  </div>
+	</div>
+		<br>
+		<h3>Today's Cat Fact</h3>
+		<h5 style="border:3px; border-style:solid; border-color:#68cfe8; padding: 1em;" id ="catfactdefault">		
+			<h3>Latest cat news</h3>
+			<h5  style="border:3px; border-style:solid; border-color:#68cfe8; padding: 1em;" id="newsPrint" ></h5>
+		
+	</div>
+	
+
+</div>
+<script type="text/javascript">
+
+	var allReminderType =[];
+	var allReminderDate =[];
+	var allReminderCat =[];
+
+	var rangeReminderType =[];
+	var rangeReminderDate =[];
+	var rangeReminderCat =[];
+
+	var monReminderType =[];
+	var monReminderDate =[];
+	var monReminderCat =[];
+
+	var tueReminderType =[];
+	var tueReminderDate =[];
+	var tueReminderCat =[];
+
+	var wedReminderType =[];
+	var wedReminderDate =[];
+	var wedReminderCat =[];
+
+	var thuReminderType =[];
+	var thuReminderDate =[];
+	var thuReminderCat =[];
+
+	var friReminderType =[];
+	var friReminderDate =[];
+	var friReminderCat =[];
+
+	var satReminderType =[];
+	var satReminderDate =[];
+	var satReminderCat =[];
+
+	var sunReminderType =[];
+	var sunReminderDate =[];
+	var sunReminderCat =[];
+
+
+
+
+
+
+
+	"{% for reminder in user_reminders %}"
+			allReminderType.push("{{reminder.reminder_type}}");
+			allReminderDate.push("{{reminder.reminder_date}}");
+			allReminderCat.push("{{reminder.reminder_cat.cat_name}}");
+	"{% endfor %}"
+
+
+	getRangeSchedule();
+	ColourToday();
+	getCatFacts();
+	getNews();
+
+	
+	
+	function getNews(){
+		var newstitle =[];
+		var newsbody =[];
+		var newslink =[];
+		
+		var url = 'http://newsapi.org/v2/everything?q="cats"&"cat"&"pets"&"pet"&"animals"&"vets' +
+          'country=gb&' +
+          'apiKey=f310f150b89e4ba5852ea84e3e392d29';
+		var req = new Request(url);
+		fetch(req)
+    		.then(response =>
+        	response.json().then(data => ({
+        		data: data,
+       	 		status: response.status
+
+    		})
+			).then(res => {
+				
+				for (var i=0; i<res.data.articles.length; i++){
+     				 
+    				 newstitle.push(res.data.articles[i].title)
+    			}
+    			for (var i=0; i<res.data.articles.length; i++){
+  
+    				 newsbody.push(res.data.articles[i].description)
+    			}
+    			for (var i=0; i<res.data.articles.length; i++){
+  
+    				 newslink.push(res.data.articles[i].url)
+    			}
+    			// for (var i=0; i<res.data.articles.length; i++){
+  
+    			// 	 newsurl[i] = res.data.articles[i].url;
+    			// }
+
+    			console.log(newstitle);
+    			// console.log(newsbody);
+
+    			var newsstring ='';
+				for (var i=0; i<newstitle.length; i++){ 
+					
+					newsstring = newsstring + "<hr>" + "<h6>" + "<p>" +"<b>" + "<i>" + newstitle[i] 
+					 			+ "</i>" + "</b>" + "</p>" + "<p>" + newsbody[i] + "</p>"
+					 			+ "<p>" + "<a href='" + newslink[i] + "'>Go to article</a>" + "</p>";
+
+				}
+                newsstring = newsstring +"<a href='https://newsapi.org'>Powered by News API</a>"
+
+				$('#newsPrint').html(newsstring);
+    			
+			}));
+
+    }
+
+    		
+	
+
+	function mondayDate(date)
+  	{	
+    	var diff = date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1);
+    	return new Date(date.setDate(diff));
+  	}
+
+  	function sundayDate(date)
+  	{    
+    	var lastday = date.getDate() - (date.getDay() - 1) + 6;
+    	return new Date(date.setDate(lastday));
+  	}
+
+
+
+	function getRangeSchedule(){
+		mdt = new Date(); 
+		var mon = mondayDate(mdt);
+				
+		sdt = new Date(); 
+		var sun = sundayDate(sdt);
+		
+		for (var i = 0 ; i<allReminderDate.length; i++){
+			var aa = allReminderDate[i].toString();
+			var months = {"January":1, "February":2, "March":3, "April":4, "May":5, "June":6,
+    		"July":7, "August":8, "September":9, "October":10, "November":11, "December":12};
+    		
+			var dates = allReminderDate[i].replace(",","").split(" ");
+			
+	        var date = dates[1];
+	        var month = dates[0];
+	        var year = dates[2]
+	        var reminderDate = [months[month],date,year].toString().replace(",","/").replace(",","/");
+	        
+
+	        reminderDate = new Date(reminderDate);
+	        
+
+			if(reminderDate >= mon && reminderDate <= sun) {
+				
+				rangeReminderType.push(allReminderType[i]);
+				rangeReminderDate.push(allReminderDate[i]);
+				rangeReminderCat.push(allReminderCat[i]);
+
+			}
+			
+
+		}
+
+
+		
+
+
+
+		sortReminders();
+
+
+	}
+
+
+
+	function sortReminders(){
+		
+
+
+		for (var i = 0 ; i<rangeReminderType.length; i++){
+			var aa = rangeReminderDate[i].toString();
+			var months = {"January":1, "February":2, "March":3, "April":4, "May":5, "June":6,
+    		"July":7, "August":8, "September":9, "October":10, "November":11, "December":12};
+    		
+			var dates = rangeReminderDate[i].replace(",","").split(" ");
+			
+	        var date = dates[1];
+	        var month = dates[0];
+	        var year = dates[2]
+	        var reminderDate = [months[month],date,year].toString().replace(",","/").replace(",","/");
+	        
+
+	        reminderDate = new Date(reminderDate);
+
+	        var dateNo = reminderDate.getDay();
+			if (dateNo == 1){
+				
+				monReminderType.push(rangeReminderType[i]);
+				monReminderCat.push(rangeReminderCat[i]);
+				monReminderDate.push(rangeReminderDate[i]);
+			}
+			if (dateNo == 2){
+				
+				tueReminderType.push(rangeReminderType[i]);
+				tueReminderCat.push(rangeReminderCat[i]);
+				tueReminderDate.push(rangeReminderDate[i]);
+			}
+			if (dateNo == 3){
+				
+				wedReminderType.push(rangeReminderType[i]);
+				wedReminderCat.push(rangeReminderCat[i]);
+				wedReminderDate.push(rangeReminderDate[i]);
+			}
+			if (dateNo == 4){
+				
+				thuReminderType.push(rangeReminderType[i]);
+				thuReminderCat.push(rangeReminderCat[i]);
+				thuReminderDate.push(rangeReminderDate[i]);
+			}
+			if (dateNo == 5){
+				
+				friReminderType.push(rangeReminderType[i]);
+				friReminderCat.push(rangeReminderCat[i]);
+				friReminderDate.push(rangeReminderDate[i]);
+			}
+			if (dateNo == 6){
+				
+				satReminderType.push(rangeReminderType[i]);
+				satReminderCat.push(rangeReminderCat[i]);
+				satReminderDate.push(rangeReminderDate[i]);
+			}
+			if (dateNo == 0){
+				
+				sunReminderType.push(rangeReminderType[i]);
+				sunReminderCat.push(rangeReminderCat[i]);
+				sunReminderDate.push(rangeReminderDate[i]);
+			}
+		}
+
+		displayReminders();
+
+
+	}
+
+
+	function ColourToday(){
+		var date = new Date();
+		var today = date.getDay();
+		
+
+		if(today==1){
+			$("#moncol").addClass("todayColour");
+		}
+		if(today==2){
+			$("#tuecol").addClass("todayColour");	
+		}
+		if(today==3){
+			$("#wedcol").addClass("todayColour");
+		}
+		if(today==4){
+			$("#thucol").addClass("todayColour");
+		}
+		if(today==5){
+			$("#fricol").addClass("todayColour");
+		}
+		if(today==6){
+			$("#satcol").addClass("todayColour");
+		}
+		if(today==0){
+			$("#suncol").addClass("todayColour");
+		}
+
+
+	}
+
+
+
+	function displayReminders(){
+
+		var mondayString ="";
+		var tuesdayString ="";
+		var wednesdayString ="";
+		var thursdayString ="";
+		var fridayString ="";
+		var saturdayString ="";
+		var sundayString ="";
+
+
+		for (var i = 0 ; i<monReminderType.length; i++){
+			$("#mondayTable").find('tbody').append("<tr><td scope='row'>" + monReminderType[i] + " for " + monReminderCat[i] +"</td></tr>");
+		}
+
+		for (var i = 0 ; i<tueReminderType.length; i++){
+			$("#tuesdayTable").find('tbody').append("<tr><td scope='row'>" + tueReminderType[i] + " for " + tueReminderCat[i] +"</td></tr>");
+		}
+
+		for (var i = 0 ; i<wedReminderType.length; i++){
+			$("#wednesdayTable").find('tbody').append("<tr><td scope='row'>" + wedReminderType[i] + " for " + wedReminderCat[i] +"</td></tr>");
+		}
+
+		for (var i = 0 ; i<thuReminderType.length; i++){
+			$("#thursdayTable").find('tbody').append("<tr><td scope='row'>" + thuReminderType[i] + " for " + thuReminderCat[i] +"</td></tr>");
+		}
+
+		for (var i = 0 ; i<friReminderType.length; i++){
+			$("#fridayTable").find('tbody').append("<tr><td scope='row'>" + friReminderType[i] + " for " + friReminderCat[i] +"</td></tr>");
+		}
+
+		for (var i = 0 ; i<satReminderType.length; i++){
+			$("#saturdayTable").find('tbody').append("<tr><td scope='row'>" + satReminderType[i] + " for " + satReminderCat[i] +"</td></tr>");
+		}
+
+		for (var i = 0 ; i<sunReminderType.length; i++){
+			$("#sundayTable").find('tbody').append("<tr><td scope='row'>" + sunReminderType[i] + " for " + sunReminderCat[i] +"</td></tr>");
+		}
+
+
+	}
+
+
+
+	function getCatFacts(){
+
+		var factUrl = "https://cat-fact.herokuapp.com/facts/random?amount=1"
+
+			$.ajax({
+				type: "GET",
+				url: factUrl,			
+				success: function(response){
+					var text = response.text
+					$("#catfactdefault").html(text);
+
+					
+						 
+					}	
+				}
+
+			)
+	}
+
+
+	
+
+
+
+</script>
+{% endblock content %}
